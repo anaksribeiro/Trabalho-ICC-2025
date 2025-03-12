@@ -27,7 +27,88 @@ void imprimir_viagem(int id, int cod[5], int qtd_filas[5], char destino[5][50], 
   }
 }
 
+void imprimir_passagem(int id_cliente, int id_viagem, char nome_cliente[100][50], char cpf_cliente[100][15], char origem[5][50], char destino[5][50], float valor_passagem[5], int assento) {
+  printf("\n=== Passagem de Viagem ===\n");
+  printf("Cliente: %s\n", nome_cliente[id_cliente]);
+  printf("CPF: %s\n", cpf_cliente[id_cliente]);
+  printf("Origem: %s\n", origem[id_viagem]);
+  printf("Destino: %s\n", destino[id_viagem]);
+  printf("Assento: %d\n", assento);
+  printf("Valor: R$%.2f\n", valor_passagem[id_viagem]);
+  printf("===========================\n");
+}
 
+void exibir_passagens_cliente(char cpf_cliente[100][15], char nome_cliente[100][50], int assento_cliente[100][5][2], int n_passagens_c[100], int index_c, char origem[5][50], char destino[5][50]) {
+  char auxcpf[15];
+  int encontrado = -1;
+
+  printf("Inserir CPF do cliente: ");
+  scanf("%s", auxcpf);
+
+  for (int i = 0; i < index_c; i++) {
+    if (strcmp(auxcpf, cpf_cliente[i]) == 0) {
+      encontrado = i;
+      break;
+    }
+  }
+
+  if (encontrado == -1) {
+    printf("Cliente não encontrado ... retornando ao menu\n");
+    return;
+  }
+
+  if (n_passagens_c[encontrado] == 0) {
+    printf("Cliente não possui passagens compradas ... retornando ao menu\n");
+    return;
+  }
+
+  printf("\nPassagens de %s (CPF: %s):\n", nome_cliente[encontrado], cpf_cliente[encontrado]);
+  for (int i = 0; i < n_passagens_c[encontrado]; i++) {
+    if (assento_cliente[encontrado][i][0] != -1) {
+      printf("Origem: %s, Destino: %s, Assento: %d\n", origem[i], destino[i], assento_cliente[encontrado][i][0]);
+    }
+    if (assento_cliente[encontrado][i][1] != -1) {
+      printf("Origem: %s, Destino: %s, Assento: %d\n", origem[i], destino[i], assento_cliente[encontrado][i][1]);
+    }
+  }
+  printf("====================================\n");
+}
+
+void exibir_viagem(int codviagem, int codigos_viagem[5], int qtd_viagens, char origem[5][50], char destino[5][50], char parada[5][50], char tipo[5], float valor_passagem[5], int qtd_assentos[5], int v_assentos[5][48], int qtd_filas[5]) {
+  int index = -1;
+  for (int i = 0; i < qtd_viagens; i++) {
+    if (codviagem == codigos_viagem[i]) {
+      index = i;
+      break;
+    }
+  }
+
+  if (index == -1) {
+    printf("Viagem não encontrada... retornando ao menu\n");
+    return;
+  }
+
+  printf("\n=== Detalhes da Viagem ===\n");
+  printf("Código: %d\n", codigos_viagem[index]);
+  printf("Origem: %s\n", origem[index]);
+  printf("Destino: %s\n", destino[index]);
+  printf("Tipo: %s\n", tipo[index] == -1 ? "Direto" : "Com Ponto de Parada");
+  if (tipo[index] != -1) {
+    printf("Ponto de Parada: %s\n", parada[tipo[index]]);
+  }
+  printf("Valor da Passagem: R$%.2f\n", valor_passagem[index]);
+  int c =0;
+  printf("Mapa de assentos:\n");
+  for (int j = 0 ; j < 12 ; j++) {
+    for (int i = 0; i < qtd_filas[index]; i++) {
+      printf("%d - %c ", c, v_assentos[index][c] == 0 ? 'L' : 'O');
+      c++;
+    }
+    printf("\n");
+  }
+
+  printf("===========================\n");
+}
 // Funções para cadastrar
 void cadastrar_cliente(int id, char nome[100][50], char cpf[100][15]) {
   printf("Insira o nome do cliente: ");
@@ -93,82 +174,109 @@ int cadastrar_viagem(int id, int cod[5], int qtd_filas[5],char destino[5][50], c
   qtd_assentos[id] = qtd_filas[id] * 12;
 
   for (int i =0 ; i< qtd_assentos[id]; i++) {
-    mapa_assentos[id][i] = 1;
+    mapa_assentos[id][i] = 0;
   }
   return 1;
 }
 
-int comprar_passagem(int id, int id_cliente[200], int id_viagem[200],char cpf[100], int codviagem[5],int index_v, int index_c, int qtd_assentos[5], int v_assentos[5][48], int assento_cliente[100][5][2], int assentos_disp[5], int n_passagens_c[100]){
-  char auxcpf[15];
-  int auxcodviagem;
-  id_cliente[id] = -1;
-  id_viagem[id] = -1;
+int comprar_passagem(int id, int id_cliente[200], int id_viagem[200], char cpf_cliente[100][15], int codviagem[5], int index_v, int index_c, int qtd_assentos[5], int v_assentos[5][48], int assento_cliente[100][5][2], int assentos_disp[5], int n_passagens_c[100]) {
+    char auxcpf[15];
+    int auxcodviagem, assento;
+    id_cliente[id] = -1;
+    id_viagem[id] = -1;
 
-  do{
     if (index_c == 0) {
-      printf("não existem clientes cadastrados ... retornando ao menu");
-      return 0;
-    }
-    printf("inserir cpf cliente: ");
-    scanf("%s", cpf);
-
-    for(int i = 0; i < index_c; i++) {
-      if(strcmp(cpf, cpf[i]) == 0) id_cliente = i;
+        printf("Não existem clientes cadastrados ... retornando ao menu\n");
+        return 0;
     }
 
-    if (id_cliente[id] == -1) {
-      int submenu = 0;
-      printf("cliente não encontrado...\n");
-      printf("0- digitar CPF novamente\n");
-      printf("1- voltar ao menu\n");
-      scanf("%d", &submenu);
-      if (submenu == 0) return 0;
+    do {
+        printf("Inserir CPF do cliente: ");
+        scanf("%s", auxcpf);
 
-    }
-  }while (id_cliente[id] == -1);
+        for (int i = 0; i < index_c; i++) {
+            if (strcmp(auxcpf, cpf_cliente[i]) == 0) {
+                id_cliente[id] = i;
+                break;
+            }
+        }
 
-  do {
+        if (id_cliente[id] == -1) {
+            int submenu;
+            printf("Cliente não encontrado...\n0 - Digitar CPF novamente\n1 - Voltar ao menu\n");
+            scanf("%d", &submenu);
+            if (submenu == 1) return 0;
+        }
+    } while (id_cliente[id] == -1);
+
     if (index_v == 0) {
-      printf("não existem viagens cadastradas ... retornando ao menu");
-      return 0;
+        printf("Não existem viagens cadastradas ... retornando ao menu\n");
+        return 0;
     }
 
-    printf("Insira o codigo da viagem: ");
-    scanf("¨%d", &auxcodviagem);
+    do {
+        printf("Insira o código da viagem: ");
+        scanf("%d", &auxcodviagem);
 
-    for (int i = 0; i < index_v; i++) {
-      if (auxcodviagem == codviagem[i]) id_viagem[i] = i;
+        for (int i = 0; i < index_v; i++) {
+            if (auxcodviagem == codviagem[i]) {
+                id_viagem[id] = i;
+                break;
+            }
+        }
+
+        if (id_viagem[id] == -1) {
+            int submenu;
+            printf("Viagem não encontrada...\n0 - Digitar código novamente\n1 - Voltar ao menu\n");
+            scanf("%d", &submenu);
+            if (submenu == 1) return 0;
+        }
+    } while (id_viagem[id] == -1);
+
+    if (n_passagens_c[id_cliente[id]] >= 5 || assento_cliente[id_cliente[id]][id_viagem[id]][1] != -1) {
+        printf("Cliente atingiu o limite máximo de passagens... retornando ao menu\n");
+        return 0;
     }
 
-    if (id_viagem[id] == -1) {
-      int submenu = 0;
-      printf("viagem não encontrada...\n");
-      printf("0- digitar codigo novamente\n");
-      printf("1- voltar ao menu\n");
-      scanf("%d", &submenu);
-      if (submenu == 0) return 0;
+    do {
+        int c =0;
+        printf("Mapa de assentos:\n");
+        for (int j = 0 ; j < 12 ; j++) {
+          for (int i = 0; i < (qtd_assentos[id_viagem[id]]); i++) {
+            printf("%d - %s ", c, v_assentos[id_viagem[id]][i] == 0 ? "L" : "O");
+            c++;
+
+          }
+          printf("\n");
+        }
+        printf("Escolha um assento: ");
+        scanf("%d", &assento);
+
+        if (assento < 0 || assento >= (qtd_assentos[id_viagem[id]])*12 || v_assentos[id_viagem[id]][assento] != 0) {
+            printf("Assento inválido ou já ocupado. Escolha outro.\n");
+            assento = -1;
+        }
+    } while (assento == -1);
+
+    v_assentos[id_viagem[id]][assento] = 1;
+  int auxi = 0;
+    if (assento_cliente[id_cliente[id]][id_viagem[id]][0] != -1) auxi =1;
+    assento_cliente[id_cliente[id]][id_viagem[id]][auxi] = assento;
+    n_passagens_c[id_cliente[id]]++;
+    assentos_disp[id_viagem[id]]--;
+
+    printf("Passagem comprada com sucesso! Assento %d reservado.\n", assento);
+    return 1;
+}
+void inicializar_dados(int m[100][5][2], int m2[100]) {
+    for (int i = 0; i < 100; i++) {
+      m2[i]= 0;
+      for (int j = 0; j < 5; j++) {
+        for (int k = 0; k < 2; k++) {
+          m[i][j][k] = -1;
+        }
+      }
     }
-  }while (id_viagem[id] != -1);
-
-  int assento = -1;
- do {
-
-   for (int i =0; i< qtd_assentos[id]; i++) {
-     printf("%d-", i);
-     if (v_assentos[i] == 0) printf("disponível\n");
-     else printf("indisponivel\n");
-   }
-
-   scanf("%d", &assento);
-
-   if (v_assentos[assento] == 0) assento =-1;
-
- }while(assento ==-1);
-
-  if(n_passagens_c[id_cliente] == 5 || assento_cliente[id_cliente][id_viagem][2] != -1) {
-    printf("cliente já atingiu o limite de passagens ... retornando ao menu");
-    return 0;
-  }
 }
 int main() {
   // Clientes
@@ -197,10 +305,10 @@ int main() {
   int index_passagem =0;
   int id_cliente[200];
   int id_viagem[200];
-  int passagens_cliente[100][5];
   int assentos_cliente[100][5][2];
   int n_passagens_cliente[100];
 
+  inicializar_dados(assentos_cliente,n_passagens_cliente);
   int menu = 0;
   while (menu != -1) {
     printf("\nMenu:\n");
@@ -208,6 +316,8 @@ int main() {
     printf("2. Cadastrar Ponto de Parada\n");
     printf("3. Cadastrar Viagem\n");
     printf("4. Comprar Passagem\n");
+    printf("5. Exibir Determinada Viagem\n");
+    printf("6. Exibir Cliente e Suas Passagens\n");
     printf("-1. Sair\n");
     printf("Escolha uma opção: ");
     scanf("%d", &menu);
@@ -234,6 +344,21 @@ int main() {
           index_viagem += cadastrar_viagem(index_viagem,codigo_viagem,quantidade_de_filas,destino,origem,tipo_onibus,tipo_viagem,valor_passagem,quantide_de_assentos_disp,index_ponto_de_parada,nome_ponto_de_parada,codigo_ponto_de_parada,mapa_de_assentos_disp);
         }
         break;
+      case 4:
+        if (comprar_passagem(index_passagem, id_cliente, id_viagem, cpf_cliente, codigo_viagem, index_viagem, index_cliente, quantidade_de_filas, mapa_de_assentos_disp, assentos_cliente, quantide_de_assentos_disp, n_passagens_cliente)) {
+          index_passagem++;
+        }
+      break;
+      case 6:
+        exibir_passagens_cliente(cpf_cliente, nome_cliente, assentos_cliente, n_passagens_cliente, index_cliente, origem, destino);
+      break;
+      case 5:
+        printf("Digite o código da viagem: ");
+        int cod;
+        scanf("%d", &cod);
+        exibir_viagem(cod, codigo_viagem, index_viagem, origem, destino, nome_ponto_de_parada, tipo_viagem, valor_passagem, quantide_de_assentos_disp, mapa_de_assentos_disp,quantidade_de_filas);
+      break;
+
       case -1:
         printf("Saindo...\n");
       break;
